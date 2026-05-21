@@ -14,8 +14,8 @@ def load_data():
         data = json.load(f)
     df = pd.DataFrame(data)
     
-    # 將 A. K. Yearling 合併為 A.K. Yearling
-    df['character'] = df['character'].replace('A. K. Yearling', 'A.K. Yearling')
+    # 將 A. K. Yarling 合併為 A.K. Yarling
+    df['character'] = df['character'].replace('A. K. Yarling', 'A.K. Yarling')
     return df
 
 df = load_data()
@@ -33,16 +33,31 @@ with col2:
     selected_season = st.selectbox("選擇季別", seasons)
 
 with col3:
-    # 動態連動集數
-    if selected_season != "全部":
-        ep_list = df[df['season'] == selected_season]['episode_number'].unique().tolist()
+    # 【更新點】根據季別狀態，動態切換集數欄位的顯示與可用性
+    if selected_season == "全部":
+        # 沒選擇季別時，集數選單直接停用 (disabled=True)
+        selected_ep_option = st.selectbox(
+            "選擇集數", 
+            options=["全部"], 
+            disabled=True, 
+            help="請先選擇特定的季別以開啟集數搜尋"
+        )
     else:
-        ep_list = df['episode_number'].unique().tolist()
-    episodes = ["全部"] + sorted(ep_list)
-    selected_episode = st.selectbox("選擇集數", episodes)
+        # 有選擇季別時，精準抓出該季的 (集數, 名稱) 組合，並去除重複值
+        season_eps = df[df['season'] == selected_season][['episode_number', 'episode_title']].drop_duplicates().sort_values('episode_number')
+        
+        # 轉換為 tuple 清單，格式如: [(1, "Friendship is Magic, part 1"), (2, "...")]
+        ep_tuples = list(season_eps.itertuples(index=False, name=None))
+        options = ["全部"] + ep_tuples
+        
+        # 利用 format_func 將背景的 tuple 資料美化後秀在選單上
+        selected_ep_option = st.selectbox(
+            "選擇集數",
+            options=options,
+            format_func=lambda x: "全部" if x == "全部" else f"Ep {x[0]}: {x[1]}"
+        )
 
 with col4:
-    # 使用單一的多選表單，本身即支援鍵盤輸入過濾與清單點選
     chars = sorted(df['character'].unique().tolist())
     selected_chars = st.multiselect(
         "從清單選擇或輸入多位角色", 
@@ -63,12 +78,13 @@ if search_text:
 if selected_season != "全部":
     filtered_df = filtered_df[filtered_df['season'] == selected_season]
 
-if selected_episode != "全部":
-    filtered_df = filtered_df[filtered_df['episode_number'] == selected_episode]
+# 【更新點】配合 tuple 格式的集數過濾邏輯
+if selected_season != "全部" and selected_ep_option != "全部":
+    # selected_ep_option 的第一個元素 [0] 即為集數數字 (episode_number)
+    ep_num = selected_ep_option[0]
+    filtered_df = filtered_df[filtered_df['episode_number'] == ep_num]
 
-# 多選角色的過濾邏輯
 if selected_chars:
-    # 將選取的角色組合為正則表達式的 OR 邏輯 (A|B|C)
     pattern = '|'.join([re.escape(c) for c in selected_chars])
     filtered_df = filtered_df[filtered_df['character'].str.contains(pattern, case=False, na=False)]
 
