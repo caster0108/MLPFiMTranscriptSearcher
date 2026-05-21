@@ -20,20 +20,19 @@ def load_data():
 
 df = load_data()
 
-# 3. 建立搜尋與篩選介面 (分為兩行排版，讓畫面更寬敞)
+# 3. 建立搜尋與篩選介面
 st.markdown("### 🔍 搜尋條件")
 
-# 第一行：關鍵字、季別、集數
-row1_col1, row1_col2, row1_col3 = st.columns([4, 2, 2])
+col1, col2, col3, col4 = st.columns([3, 2, 2, 3])
 
-with row1_col1:
+with col1:
     search_text = st.text_input("輸入台詞關鍵字 (可留空)")
 
-with row1_col2:
+with col2:
     seasons = ["全部"] + sorted(df['season'].unique().tolist())
     selected_season = st.selectbox("選擇季別", seasons)
 
-with row1_col3:
+with col3:
     # 動態連動集數
     if selected_season != "全部":
         ep_list = df[df['season'] == selected_season]['episode_number'].unique().tolist()
@@ -42,21 +41,14 @@ with row1_col3:
     episodes = ["全部"] + sorted(ep_list)
     selected_episode = st.selectbox("選擇集數", episodes)
 
-# 第二行：兩種角色搜尋方式並存
-row2_col1, row2_col2 = st.columns([4, 4])
-
-with row2_col1:
-    # 保留支援複製貼上、反白全選的純文字框
-    selected_char_text = st.text_input("自行輸入角色名稱 (支援複製貼上 / 部分名稱)", placeholder="例如: Twilight")
-
-with row2_col2:
-    # 加入多選下拉表單，方便瀏覽與點擊
+with col4:
+    # 使用單一的多選表單，本身即支援鍵盤輸入過濾與清單點選
     chars = sorted(df['character'].unique().tolist())
-    selected_chars_multi = st.multiselect(
-        "或從清單選擇多位角色", 
+    selected_chars = st.multiselect(
+        "從清單選擇或輸入多位角色", 
         options=chars, 
         default=[], 
-        placeholder="點擊展開角色清單..."
+        placeholder="留空即為全選..."
     )
 
 # 是否標示關鍵字的選項
@@ -74,19 +66,11 @@ if selected_season != "全部":
 if selected_episode != "全部":
     filtered_df = filtered_df[filtered_df['episode_number'] == selected_episode]
 
-# 【更新點】合併兩種角色輸入方式的過濾邏輯
-char_patterns = []
-# 擷取文字框的輸入 (去除前後多餘空白)
-if selected_char_text.strip() != "":
-    char_patterns.append(re.escape(selected_char_text.strip()))
-# 擷取多選表單的輸入
-if selected_chars_multi:
-    char_patterns.extend([re.escape(c) for c in selected_chars_multi])
-
-# 如果有任何角色條件，將它們組合成正則表達式的 OR 邏輯 (A|B|C)
-if char_patterns:
-    combined_pattern = '|'.join(char_patterns)
-    filtered_df = filtered_df[filtered_df['character'].str.contains(combined_pattern, case=False, na=False)]
+# 多選角色的過濾邏輯
+if selected_chars:
+    # 將選取的角色組合為正則表達式的 OR 邏輯 (A|B|C)
+    pattern = '|'.join([re.escape(c) for c in selected_chars])
+    filtered_df = filtered_df[filtered_df['character'].str.contains(pattern, case=False, na=False)]
 
 # 5. 顯示結果
 st.divider() 
