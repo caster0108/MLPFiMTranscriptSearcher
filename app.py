@@ -14,8 +14,8 @@ def load_data():
         data = json.load(f)
     df = pd.DataFrame(data)
     
-    # 將 A. K. Yarling 合併為 A.K. Yarling
-    df['character'] = df['character'].replace('A. K. Yarling', 'A.K. Yarling')
+    # 將 A. K. Yearling 合併為 A.K. Yearling
+    df['character'] = df['character'].replace('A. K. Yearling', 'A.K. Yearling')
     return df
 
 df = load_data()
