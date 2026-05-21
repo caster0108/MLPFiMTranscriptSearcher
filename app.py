@@ -7,15 +7,22 @@ import re
 st.set_page_config(page_title="MLP 逐字稿搜尋", layout="wide")
 st.title("MLP: FIM 逐字稿搜尋器")
 
-# 2. 讀取資料並合併特定角色
+# 【更新點 1】在大標題下方加入逐字稿來源連結
+st.markdown("[🔗 逐字稿資料來源：MLP Fandom Wiki Transcripts](https://mlp.fandom.com/wiki/Transcripts/)")
+
+# 2. 讀取資料並修正角色名稱
 @st.cache_data
 def load_data():
     with open('mlp_transcripts_full.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
     df = pd.DataFrame(data)
     
-    # 將 A. K. Yarling 合併為 A.K. Yarling
-    df['character'] = df['character'].replace('A. K. Yarling', 'A.K. Yarling')
+    # 【更新點 2】將錯誤的 Yarling 修正並統一合併為官方正確名稱 A. K. Yearling
+    df['character'] = df['character'].replace({
+        'A. K. Yarling': 'A. K. Yearling',
+        'A.K. Yarling': 'A. K. Yearling',
+        'A.K. Yearling': 'A. K. Yearling'
+    })
     return df
 
 df = load_data()
@@ -33,9 +40,8 @@ with col2:
     selected_season = st.selectbox("選擇季別", seasons)
 
 with col3:
-    # 【更新點】根據季別狀態，動態切換集數欄位的顯示與可用性
+    # 動態連動集數
     if selected_season == "全部":
-        # 沒選擇季別時，集數選單直接停用 (disabled=True)
         selected_ep_option = st.selectbox(
             "選擇集數", 
             options=["全部"], 
@@ -43,14 +49,10 @@ with col3:
             help="請先選擇特定的季別以開啟集數搜尋"
         )
     else:
-        # 有選擇季別時，精準抓出該季的 (集數, 名稱) 組合，並去除重複值
         season_eps = df[df['season'] == selected_season][['episode_number', 'episode_title']].drop_duplicates().sort_values('episode_number')
-        
-        # 轉換為 tuple 清單，格式如: [(1, "Friendship is Magic, part 1"), (2, "...")]
         ep_tuples = list(season_eps.itertuples(index=False, name=None))
         options = ["全部"] + ep_tuples
         
-        # 利用 format_func 將背景的 tuple 資料美化後秀在選單上
         selected_ep_option = st.selectbox(
             "選擇集數",
             options=options,
@@ -78,9 +80,7 @@ if search_text:
 if selected_season != "全部":
     filtered_df = filtered_df[filtered_df['season'] == selected_season]
 
-# 【更新點】配合 tuple 格式的集數過濾邏輯
 if selected_season != "全部" and selected_ep_option != "全部":
-    # selected_ep_option 的第一個元素 [0] 即為集數數字 (episode_number)
     ep_num = selected_ep_option[0]
     filtered_df = filtered_df[filtered_df['episode_number'] == ep_num]
 
