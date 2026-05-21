@@ -8,7 +8,7 @@ st.set_page_config(page_title="MLP 逐字稿搜尋", layout="wide")
 st.title("MLP: FIM 逐字稿搜尋器")
 
 # 【更新點 1】在大標題下方加入逐字稿來源連結
-st.markdown("[🔗 逐字稿資料來源：MLP Fandom Wiki Transcripts](https://mlp.fandom.com/wiki/Transcripts/)")
+st.markdown("[🔗 逐字稿資料來源：MLP Fandom Wiki Transcripts](https://mlp.fandom.com/wiki/Special:BlankPage?blankspecial=transcripts)")
 
 # 2. 讀取資料並修正角色名稱
 @st.cache_data
